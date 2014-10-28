@@ -1,6 +1,6 @@
 # vswitch: open-vswitch
 #
-class vswitch::ovs(
+class vswitch::ovs_redhat(
   $package_ensure = 'present'
 ) inherits vswitch::params {
 
