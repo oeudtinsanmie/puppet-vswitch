@@ -21,7 +21,14 @@ class vswitch::params {
       $ovs_service_name = 'openvswitch'
       $provider         = 'ovs_redhat'
       $src_install      = true
-      $src_version      = '2.1.3'
+      $src_version      = '2.3.0'
+      $build_exec = {
+        environment => [
+          "HOME=/home/ovswitch",
+        ], 
+        user => "ovswitch",
+        tag => "build-ovs",
+      }
       if $::lsbmajdistrelease == undef {
         $majrelease = $::operatingsystemmajrelease
       }
@@ -31,7 +38,7 @@ class vswitch::params {
       case $::operatingsystem {
         'RedHat', 'CentOS' : {
           $spec             = 'rhel/openvswitch.spec'
-          $kmod_spec        = "rhel/openvswitch-kmod-rhel${majrelease}"          
+          $kmod_spec        = "rhel/openvswitch-kmod-rhel${majrelease}.spec"
         }
         'Fedora': {
           $spec             = 'rhel/openvswitch-fedora.spec'
@@ -44,7 +51,7 @@ class vswitch::params {
       $ovs_service_name = 'openvswitch-switch'
       $provider         = 'ovs'
       $src_install      = false
-      $src_version      = '2.1.3'
+      $src_version      = '2.3.0'
     }
     default: {
       fail " Osfamily ${::osfamily} not supported yet"
