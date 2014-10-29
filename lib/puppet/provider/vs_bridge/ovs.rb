@@ -12,7 +12,7 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
   
   def initialize(value={})
       super(value)
-      @property_flush = value
+      @property_flush = Hash[value]
       @property_flush[:ensure] = nil
   end
 
@@ -93,7 +93,7 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
           interface = nil
           if bridge != nil and port != nil then
             if line.start_with? "tag: " then
-              port[:tag] = line[5..-1].lstrip.rstrip
+              port[:tag] = line[5..-1].lstrip.rstrip.to_i
             end
             
           end
@@ -134,10 +134,10 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
     end
     if @property_hash[:vlans] != nil then
       @property_hash[:vlans].each { |vlan|
-        if @property_flush[:vlans] != nil and @property_flush[:vlans].include? vlan then
+        if @property_flush[:vlans] != nil and @property_flush[:vlans].include? "#{@resource[:name]}.#{vlan}" then
           @property_flush[:vlans].delete(vlan)
         else
-          vsctl("ad-br", "#{@resource[:name]}.#{vlan}", @resource[:name], vlan)
+          vsctl("add-br", "#{@resource[:name]}.#{vlan}", @resource[:name], vlan)
         end
       }
     end
@@ -168,14 +168,15 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
     end
     
     new_ids.each_pair do |k,v|
+      if v != old_ids[k] then  # update if value is not in old list or has changed
+        vsctl('br-set-external-id', @resource[:name], k, v)
+      end
       if old_ids.has_key?(k) then
-        if v != old_ids[k] then  # update if value has changed
-          vsctl('br-set-external-id', @resource[:name], k, v)
-        end
         old_ids.delete(k) # remove from old_ids, so key does not get unset in next step
       end
     end
     old_ids.each_pair do |k,v| # unset any external ids not in the list
       vsctl('br-set-external-id', @resource[:name], k)
+    end
   end
 end

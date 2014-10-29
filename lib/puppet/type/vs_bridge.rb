@@ -38,19 +38,37 @@ Puppet::Type.newtype(:vs_bridge) do
       currentvalue.inspect
     end
 
+    validate do |value|
+      if (value == nil) then 
+        return
+      end
+      if value.is_a?(Array)
+        value.each { |val|
+          unless val.is_a?(Integer) and val >=0
+            raise ArgumentError, "vlan ids should be non-negative integers"
+          end
+        }
+      else
+        unless value.is_a?(Integer) and value >=0
+          raise ArgumentError, "vlan ids should be non-negative integers"
+        end
+      end
+    end
   end
 
   newproperty(:external_ids, :array_matching => :all) do
     desc 'Array of External IDs for the bridge: "key1=value2,key2=value2"'
-    
-    if is.is_a?(Array) and @should.is_a?(Array)
-      is.sort == @should.sort
-    elsif is.is_a?(Array) and @should.is_a?(String)
-      is.sort == @should.split(",").sort
-    elsif @should.is_a?(Array) and @should.length == 1
-      is == @should[0]
-    else
-      is == @should
+
+    def insync?(is)    
+      if is.is_a?(Array) and @should.is_a?(Array)
+        is.sort == @should.sort
+      elsif is.is_a?(Array) and @should.is_a?(String)
+        is.sort == @should.split(",").sort
+      elsif @should.is_a?(Array) and @should.length == 1
+        is == @should[0]
+      else
+        is == @should
+      end
     end
     
     validate do |value|
