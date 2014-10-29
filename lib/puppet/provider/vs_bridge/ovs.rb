@@ -3,8 +3,10 @@ require 'puppet'
 Puppet::Type.type(:vs_bridge).provide(:ovs) do
   commands :vsctl => 'ovs-vsctl'
   commands :ip    => 'ip'
+
+  mk_resource_methods
   
-  def self.INDENT
+  def self.indent_space
     4
   end
   
@@ -41,28 +43,28 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
   
   def self.list_obj
     theAnswer = []
-    bridgelist = vsctl('show').split('\n')
+    bridgelist = vsctl('show').split("\n")
     prevIndent = 0
+    bridge = nil
     for line in bridgelist
       indent = 0
-      while line[indent] == ' ' do
-        indent += INDENT
+      while line[indent, indent_space] == "    " do
+        indent += indent_space
       end
-      line = line[indent, -1]
-      indent /= INDENT
-      
+      line = line[indent..-1]
+      indent /= indent_space
       case indent
         when 1
-          if bridge then
+          if bridge != nil then
             theAnswer += [ bridge ]
           end
           port = nil
           interface = nil
           bridge = nil
-          if line.start_with? 'Bridge ' then
-            name = line.delete 'Bridge '.lstrip.rstrip
-            if name.start_with '\"' then
-              name = name[1,-2]
+          if line.start_with? "Bridge " then
+            name = line[7..-1].lstrip.rstrip
+            if name.start_with? "\"" then
+              name = name[1..-2]
             end
             bridge = {
               :name  => name,
@@ -74,25 +76,30 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
         when 2
           interface = nil
           port = nil
-          if bridge then 
-            if line.start_with? 'Port ' then
-              name = line.delete 'Port '.lstrip.rstrip
-              if name.start_with '\"' then
-                name = name[1,-2]
+          if bridge != nil then
+            if line.start_with? "Port " then
+              name = line[5..-1].lstrip.rstrip
+              if name.start_with? "\"" then
+                name = name[1..-2]
               end
               port = {
                 :name => name, 
               }
-              
             end
           end
         when 3
           interface = nil
-          if bridge and port then
-            if line.start_with? 'Interface ' then
-              name = line.delete 'Interface '.lstrip.rstrip
-              if name.start_with '\"' then
-                name = name[1,-2]
+          if bridge != nil and port != nil then
+            if line.start_with? "tag: " then
+              port[:tag] = line[5..-1].lstrip.rstrip
+            end
+            
+          end
+          if bridge != nil and port != nil then
+            if line.start_with? "Interface " then
+              name = line[10..-1].lstrip.rstrip
+              if name.start_with? "\"" then
+                name = name[1..-2]
               end
               interface = {
                 :name => name, 
@@ -100,13 +107,16 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
             end
           end
         when 4
-          if bridge and port and interface then
-            if line.lstrp.rstrp == 'type: internal' then
-              bridge[:vlans] += [ port[:name] ]
+          if bridge != nil and port != nil and interface != nil then
+            if line.lstrip.rstrip == 'type: internal' and port[:tag] != nil then
+              bridge[:vlans] += [ port[:tag] ]
             end
           end
       end
       prevIndent = indent
+    end
+    if bridge != nil then
+      theAnswer += [ bridge ]
     end
     
     theAnswer
