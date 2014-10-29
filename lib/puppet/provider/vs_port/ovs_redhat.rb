@@ -26,34 +26,49 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
 #      @resource[:bridge]).include? @resource[:interface]
 #      super
 #    end
-
-    if interface_physical?
-      template = DEFAULT
-      extras   = nil
-
-      if link?
-        extras = dynamic_default if dynamic?
-        if File.exist?(BASE + @resource[:interface])
-          template = from_str(File.read(BASE + @resource[:interface]))
-        end
+    add_bridge = false
+    @resource[:interfaces].each { |iface|
+      if iface == :portname then
+        iface = @resource[:name]
       end
+      if interface_physical?(iface)
+        template = DEFAULT
+        extras   = nil
 
-      port = IFCFG::Port.new(@resource[:interface], @resource[:bridge])
-      port.save(BASE + @resource[:interface])
+        if link?(iface)
+          if @resource[:interfaces].length == 1 then 
+            extras = dynamic_default(iface) if dynamic?(iface)
+          end
+          if File.exist?(BASE + iface)
+            template = from_str(File.read(BASE + iface))
+          end
+        end
 
+        port = IFCFG::Port.new(iface, @resource[:bridge])
+        port.save(BASE + iface)
+      end
+    }
+    if add_bridge then
       bridge = IFCFG::Bridge.new(@resource[:bridge], template)
       bridge.set(extras) if extras
       bridge.save(BASE + @resource[:bridge])
 
       ifdown(@resource[:bridge])
-      ifdown(@resource[:interface])
-      ifup(@resource[:interface])
+      @resource[:interfaces].each { |iface|
+        if iface == :portname then
+          iface = @resource[:name]
+        end
+        if interface_physical?(iface)
+          ifdown(iface)
+          ifup(iface)
+        end
+      }
       ifup(@resource[:bridge])
     end
   end
 
   def self.phys_exists?(interface, bridge)
-    if interface_physical?
+    if interface_physical?(interface)
       IFCFG::OVS.exists?(interface) &&
       IFCFG::OVS.exists?(bridge)
     else
@@ -62,24 +77,30 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
   end
 
   def phys_destroy
-    if interface_physical?
+    remove_bridge = false
+    @resource[:interfaces].each { |iface|
+      if interface_physical?(iface)
+        remove_bridge = true
+        ifdown(iface)
+        IFCFG::OVS.remove(iface)
+      end
+    }
+    if remove_bridge == true then
       ifdown(@resource[:bridge])
-      ifdown(@resource[:interface])
-      IFCFG::OVS.remove(@resource[:interface])
       IFCFG::OVS.remove(@resource[:bridge])
     end
   end
 
   private
-
-  def dynamic?
+  
+  def dynamic?(iface)
     device = ''
-    device = ip('addr', 'show', @resource[:interface])
+    device = ip('addr', 'show', iface)
     return device =~ /dynamic/ ? true : false
   end
 
-  def link?
-    if File.read("/sys/class/net/#{@resource[:interface]}/operstate") =~ /up/
+  def link?(iface)
+    if File.read("/sys/class/net/#{iface}/operstate") =~ /up/
       return true
     else
       return false
@@ -88,10 +109,10 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
     return false
   end
 
-  def dynamic_default
-    list = { 'OVSDHCPINTERFACES' => @resource[:interface] }
+  def dynamic_default(iface)
+    list = { 'OVSDHCPINTERFACES' => iface }
     # Persistent MAC address taken from interface
-    bridge_mac_address = File.read("/sys/class/net/#{@resource[:interface]}/address").chomp
+    bridge_mac_address = File.read("/sys/class/net/#{iface}/address").chomp
     if bridge_mac_address != ''
       list.merge!({ 'OVS_EXTRA' =>
         "\"set bridge #{@resource[:bridge]} other-config:hwaddr=#{bridge_mac_address}\"" })
@@ -99,10 +120,18 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
     list
   end
 
-  def interface_physical?
+  def interface_physical?(iface)
+    if iface == :portname then
+      self.class.interface_physical(@resource[:name])
+    else
+      self.class.interface_physical(iface)
+    end
+  end
+
+  def self.interface_physical?(iface)
     # OVS ports don't have entries in /sys/class/net
     # Alias interfaces (ethX:Y) must use ethX entries
-    interface = @resource[:interface].sub(/:\d/, '')
+    interface = iface.sub(/:\d/, '')
     ! Dir["/sys/class/net/#{interface}"].empty?
   end
 

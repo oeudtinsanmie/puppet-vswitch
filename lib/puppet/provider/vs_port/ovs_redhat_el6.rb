@@ -6,9 +6,9 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat_el6, :parent => :ovs_redhat) do
 
   private
 
-  def dynamic?
+  def dynamic?(iface)
     # iproute doesn't behave as expected on rhel6 for dynamic interfaces
-    if File.read(BASE + @resource[:interface]) =~ /^BOOTPROTO=['"]?dhcp['"]?$/
+    if File.read(BASE + iface) =~ /^BOOTPROTO=['"]?dhcp['"]?$/
       return true
     else
       return false

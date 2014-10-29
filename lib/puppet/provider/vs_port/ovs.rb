@@ -5,6 +5,12 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
 
   commands :vsctl => 'ovs-vsctl'
 
+  mk_resource_methods
+  
+  def self.indent_space
+    4
+  end
+
   def initialize(value={})
     super(value)
     @property_flush = Hash[value]
@@ -75,8 +81,14 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
               end
             } 
             port[:interfaces].each { |iface|
-              unless phys_exists?(iface, port[:bridge])
-                port[:ensure] = :absent
+              if iface == :portname then
+                unless phys_exists?(port[:name], port[:bridge])
+                  port[:ensure] = :absent
+                end
+              else
+                unless phys_exists?(iface, port[:bridge])
+                  port[:ensure] = :absent
+                end
               end
             }
             theAnswer += [ port ]
