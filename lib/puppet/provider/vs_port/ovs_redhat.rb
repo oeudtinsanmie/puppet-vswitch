@@ -21,11 +21,11 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
   commands :ifup   => 'ifup'
   commands :vsctl  => 'ovs-vsctl'
 
-  def create
-    unless vsctl('list-ports',
-      @resource[:bridge]).include? @resource[:interface]
-      super
-    end
+  def phys_create
+#    unless vsctl('list-ports',
+#      @resource[:bridge]).include? @resource[:interface]
+#      super
+#    end
 
     if interface_physical?
       template = DEFAULT
@@ -52,24 +52,22 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
     end
   end
 
-  def exists?
+  def self.phys_exists?(interface, bridge)
     if interface_physical?
-      super &&
-      IFCFG::OVS.exists?(@resource[:interface]) &&
-      IFCFG::OVS.exists?(@resource[:bridge])
+      IFCFG::OVS.exists?(interface) &&
+      IFCFG::OVS.exists?(bridge)
     else
-      super
+      true
     end
   end
 
-  def destroy
+  def phys_destroy
     if interface_physical?
       ifdown(@resource[:bridge])
       ifdown(@resource[:interface])
       IFCFG::OVS.remove(@resource[:interface])
       IFCFG::OVS.remove(@resource[:bridge])
     end
-    super
   end
 
   private
