@@ -12,7 +12,8 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
   
   def initialize(value={})
       super(value)
-      @property_flush = {}
+      @property_flush = value
+      @property_flush[:ensure] = nil
   end
 
   def self.instances
@@ -69,7 +70,8 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
             bridge = {
               :name  => name,
               :ensure => :present,
-              :vlans => [], 
+              :vlans => [],
+              :external_ids =>  get_external_ids(name),
             }
           end
           
@@ -123,42 +125,57 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
   end
   
   def flush
+    if @property_flush[:ensure] == :absent then
+      vsctl("del-br", @resource[:name])
+      return
+    end
+    if @property_flush[:ensure] == :present then
+      vsctl("add-br", @resource[:name])
+    end
+    if @property_hash[:vlans] != nil then
+      @property_hash[:vlans].each { |vlan|
+        if @property_flush[:vlans] != nil and @property_flush[:vlans].include? vlan then
+          @property_flush[:vlans].delete(vlan)
+        else
+          vsctl("ad-br", "#{@resource[:name]}.#{vlan}", @resource[:name], vlan)
+        end
+      }
+    end
+    if @property_flush[:vlans] != nil then
+      @property_flush[:vlans].each { |vlan|
+        vsctl("del-br", "#{@resource[:name]}.#{vlan}")
+      }
+    end
+    
+    flush_external_ids
   end
-
-#  def exists?
-#    vsctl("br-exists", @resource[:name])
-#  rescue Puppet::ExecutionFailure
-#    return false
-#  end
-#
-#  def create
-#    vsctl('add-br', @resource[:name])
-#    ip('link', 'set', @resource[:name], 'up')
-#    external_ids = @resource[:external_ids] if @resource[:external_ids]
-#  end
-#
-#  def destroy
-#    ip('link', 'set', @resource[:name], 'down')
-#    vsctl('del-br', @resource[:name])
-#  end
 
   def _split(string, splitter=',')
     return Hash[string.split(splitter).map{|i| i.split('=')}]
   end
 
-  def external_ids
-    result = vsctl('br-get-external-id', @resource[:name])
-    return result.split("\n").join(',')
+  def self.get_external_ids(name)
+    result = vsctl('br-get-external-id', name)
+    return result.split("\n")
   end
 
-  def external_ids=(value)
-    old_ids = _split(external_ids)
-    new_ids = _split(value)
-
+  def flush_external_ids 
+    old_ids = Hash[@property_flush[:external_ids].map{|i| i.split('=')}]
+    if @property_hash[:external_ids].is_a?(String) then # split if comma delimited list
+      new_ids = _split(@property_hash[:external_ids])
+    else # just map if it's an array
+      new_ids = Hash[@property_hash[:external_ids].map{|i| i.split('=')}]
+    end
+    
     new_ids.each_pair do |k,v|
-      unless old_ids.has_key?(k)
-        vsctl('br-set-external-id', @resource[:name], k, v)
+      if old_ids.has_key?(k) then
+        if v != old_ids[k] then  # update if value has changed
+          vsctl('br-set-external-id', @resource[:name], k, v)
+        end
+        old_ids.delete(k) # remove from old_ids, so key does not get unset in next step
       end
     end
+    old_ids.each_pair do |k,v| # unset any external ids not in the list
+      vsctl('br-set-external-id', @resource[:name], k)
   end
 end

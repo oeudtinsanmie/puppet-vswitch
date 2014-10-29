@@ -40,15 +40,39 @@ Puppet::Type.newtype(:vs_bridge) do
 
   end
 
-  newproperty(:external_ids) do
-    desc 'External IDs for the bridge: "key1=value2,key2=value2"'
-
+  newproperty(:external_ids, :array_matching => :all) do
+    desc 'Array of External IDs for the bridge: "key1=value2,key2=value2"'
+    
+    if is.is_a?(Array) and @should.is_a?(Array)
+      is.sort == @should.sort
+    elsif is.is_a?(Array) and @should.is_a?(String)
+      is.sort == @should.split(",").sort
+    elsif @should.is_a?(Array) and @should.length == 1
+      is == @should[0]
+    else
+      is == @should
+    end
+    
     validate do |value|
-      if !value.is_a?(String)
-        raise ArgumentError, "Invalid external_ids #{value}. Requires a String, not a #{value.class}"
+      if (value == nil) then 
+        return
       end
-      if value !~ /^(?>[a-zA-Z]\S*=\S*){1}(?>[,][a-zA-Z]\S*=\S*)*$/
-        raise ArgumentError, "Invalid external_ids #{value}. Must a list of key1=value2,key2=value2"
+      if value.is_a?(Array)
+        value.each { |val|
+          if !val.is_a?(String)
+            raise ArgumentError, "Invalid external_ids #{val}. Requires a String, not a #{val.class}"
+          end
+          if val !~ /^(?>[a-zA-Z]\S*=\S*){1}$/
+            raise ArgumentError, "Invalid external_ids #{val}. Must an array of key1=value2,key2=value2"
+          end
+        }
+      else 
+        if !value.is_a?(String)
+          raise ArgumentError, "Invalid external_ids #{value}. Requires a String, not a #{value.class}"
+        end
+        if value !~ /^(?>[a-zA-Z]\S*=\S*){1}(?>[,][a-zA-Z]\S*=\S*)*$/
+          raise ArgumentError, "Invalid external_ids #{value}. Must a list of key1=value2,key2=value2"
+        end
       end
     end
   end
