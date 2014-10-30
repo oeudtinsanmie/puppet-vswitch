@@ -27,30 +27,74 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
 #      super
 #    end
     add_bridge = false
-    @resource[:interfaces].each { |iface|
-      if iface == :portname then
-        iface = @resource[:name]
-      end
+    if @resource[:interfaces].length == 1 then
+    
+      iface = @resource[:interfaces][0]
+      iface = @resource[:name] if iface == :portname
+        
       if interface_physical?(iface)
         template = DEFAULT
         extras   = nil
-
+  
         if link?(iface)
-          if @resource[:interfaces].length == 1 then 
-            extras = dynamic_default(iface) if dynamic?(iface)
-          end
+          extras = dynamic_default(iface) if dynamic?(iface)
           if File.exist?(BASE + iface)
             template = from_str(File.read(BASE + iface))
           end
         end
-
+  
         port = IFCFG::Port.new(iface, @resource[:bridge])
+        [ :tag, :trunks ].each { |key|
+          if @resource[key] != [] then
+            port.append_key('OVS_OPTIONS', "#{key}=#{@resource[key]}")
+          end
+        }
         port.save(BASE + iface)
       end
-    }
+  
+    else
+      # add bond
+      bond = IFCFG::Bond.new(@resource[:name], @resource[:bridge])
+      @resource[:interfaces].each { |iface|
+        iface = @resource[:name] if iface == :portname
+          
+        if interface_physical?(iface)
+          template = DEFAULT
+          extras   = nil
+  
+          if link?(iface)
+            if File.exist?(BASE + iface)
+              template = from_str(File.read(BASE + iface))
+            end
+          end
+
+          bond.append_key('BOND_IFACES', iface)
+        end
+      }
+      [ :tag, :trunks, :lacp ].each { |key|
+        if @resource[key] != [] then
+          bond.append_key('OVS_OPTIONS', "#{key}=#{@resource[key]}")
+        end
+      }
+      if bond.key?('BOND_IFACES') then
+        bond.save(BASE + iface)
+      end
+
+    end
     if add_bridge then
       bridge = IFCFG::Bridge.new(@resource[:bridge], template)
       bridge.set(extras) if extras
+      if @resource[:interfaces].length > 1 then
+        bridge.del_key('')
+        @resource[:interfaces].each { |iface|
+          if iface == :portname then
+            iface = @resource[:name]
+          end
+          if interface_physical?(iface) and dynamic?(iface) then
+            bridge.append_key('OVSDHCPINTERFACES', iface)
+          end
+        }
+      end
       bridge.save(BASE + @resource[:bridge])
 
       ifdown(@resource[:bridge])

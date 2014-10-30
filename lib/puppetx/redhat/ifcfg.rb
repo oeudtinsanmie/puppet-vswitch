@@ -45,14 +45,32 @@ module IFCFG
     end
 
     def set_key(key, value)
-      @ifcfg.delete_if { |k, v| k == key } if self.key?(key)
       @ifcfg.merge!({key => value })
+    end
+    
+    def append_key(key, value)
+      if self.key? key then
+        oldval = @ifcfg[key]
+        unless oldval.is_a?(Array) 
+          oldval = [ oldval ]
+        end
+      else
+        oldval = []
+      end
+      unless value.is_a?(Array) 
+        value = [ value ]
+      end
+      set_key(key, oldval + newval) 
     end
 
     def to_s
       str = ''
       @ifcfg.each { |x, y|
-        str << "#{x}=#{y}\n"
+        if y.is_a?(Array) then
+          str << "#{x}=\"#{y.join(' ')}\"\n"
+        else
+          str << "#{x}=#{y}\n"
+        end
       }
       str
     end
@@ -74,6 +92,16 @@ module IFCFG
     def initialize(name, bridge)
       super(name)
       set_key('TYPE', 'OVSPort')
+      set_key('OVS_BRIDGE', bridge)
+      set_key('ONBOOT', 'yes')
+      set_key('BOOTPROTO', 'none')
+    end
+  end
+  
+  class Bond < OVS
+    def initialize(name, bridge)
+      super(name)
+      set_key('TYPE', 'OVSBond')
       set_key('OVS_BRIDGE', bridge)
       set_key('ONBOOT', 'yes')
       set_key('BOOTPROTO', 'none')
