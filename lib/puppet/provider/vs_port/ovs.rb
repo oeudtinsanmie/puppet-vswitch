@@ -1,3 +1,4 @@
+require 'pp'
 require 'puppet'
 
 Puppet::Type.type(:vs_port).provide(:ovs) do
@@ -14,12 +15,14 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
   def initialize(value={})
     super(value)
     @property_flush = Hash[value]
-    @property_flush[:ensure] = nil
+    unless @property_flush[:ensure] == :partial
+      @property_flush[:ensure] = nil
+    end
   end
 
   def self.instances
     list_obj.collect { |obj|
-      new(obj)
+      new(Puppet::Util::symbolizehash(obj))
     }
   end
   
@@ -36,7 +39,9 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
   end
   
   def create
-    @property_flush[:ensure] = :present
+    unless @property_flush[:ensure] == :partial
+      @property_flush[:ensure] = :present
+    end
   end
   
   def destroy
@@ -47,6 +52,21 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
     true
   end
   
+  def self.validate(port)
+    port[:interfaces].each { |iface|
+      if iface == :portname then
+        unless phys_exists?(port[:name], port[:bridge])
+          port[:ensure] = :partial
+        end
+      else
+        unless phys_exists?(iface, port[:bridge])
+          port[:ensure] = :partial
+        end
+      end
+    }
+    port
+  end
+
   def self.list_obj
     theAnswer = []
     portlist = vsctl('show').split("\n")
@@ -75,24 +95,8 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
           
         when 2
           interface = nil
-          if port != nil then
-            [ :tag, :trunks ].each { |key|
-              if port[key] == nil then
-                port[key] = []
-              end
-            } 
-            port[:interfaces].each { |iface|
-              if iface == :portname then
-                unless phys_exists?(port[:name], port[:bridge])
-                  port[:ensure] = :absent
-                end
-              else
-                unless phys_exists?(iface, port[:bridge])
-                  port[:ensure] = :absent
-                end
-              end
-            }
-            theAnswer += [ port ]
+          if port != nil and !port[:interfaces].empty? then
+            theAnswer += [ validate(port) ]
           end
           port = nil
           if bridge != nil then
@@ -101,13 +105,16 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
               if name.start_with? "\"" then
                 name = name[1..-2]
               end
+              lacp = vsctl("get", "port", name, "lacp").lstrip.rstrip
               port = {
                 :ensure => :present,
                 :name => name, 
                 :interfaces => [],
                 :bridge => bridge,
-                :lacp => vsctl("get", "port", name, "lacp")
               }
+              unless lacp == "[]"
+                port[:lacp] = lacp
+              end
             end
           end
         when 3
@@ -134,25 +141,26 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
               if name.start_with? "\"" then
                 name = name[1..-2]
               end
-              interface = name
               if name == port[:name] then
+                interface = :portname
                 port[:interfaces] += [ :portname ]
               else
+                interface = name
                 port[:interfaces] += [ name ]
               end
             end
           end
         when 4
           if bridge != nil and port != nil and interface != nil then
-            if line.lstrip.rstrip == 'type: internal' and port[:tag] != nil then
+            if line.lstrip.rstrip == 'type: internal' then
               port[:interfaces].delete(interface)
             end
           end
       end
       prevIndent = indent
     end
-    if port != nil then
-      theAnswer += [ port ]
+    if port != nil and !port[:interfaces].empty? then
+      theAnswer += [ validate(port) ]
     end
     
     theAnswer
@@ -164,16 +172,41 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
   def phys_destroy
   end
   
+  def modified_bond?
+    if !was_simple_port? then
+      if !is_simple_port? then
+        @property_flush[:interfaces].sort != @resource[:interfaces].sort
+      else
+        true
+      end
+    else
+      false
+    end
+  end
+
+  def simple_port?(hash)
+    hash[:interfaces] == [ :portname ] or hash[:interfaces] == :portname
+  end
+
+  def is_simple_port?
+    simple_port?(@resource)
+  end
+
+  def was_simple_port?
+    simple_port?(@property_flush)
+  end
+
   def flush
+    pp @property_hash
     if @property_flush[:ensure] == :absent then
       phys_destroy
     end
-    if @property_flush[:ensure] == :absent or (@resource[:interfaces] != [ :portname ] and @property_flush[:interfaces].sort != @resource[:interfaces].sort) then
+    if @property_flush[:ensure] == :absent or modified_bond? then
       vsctl("del-port", @resource[:name])
       return
     end
-    if @property_flush[:ensure] == :present or (@resource[:interfaces] != [ :portname ] and @property_flush[:interfaces].sort != @resource[:interfaces].sort) then
-      if @resource[:interfaces] == [ :portname ] then
+    if @property_flush[:ensure] == :present or modified_bond? then
+      if is_simple_port? then
         vsctl("add-port", @resource[:bridge], @resource[:name])
       else
         cmd_list = [ "add-bond", @resource[:bridge], @resource[:name] ]
@@ -182,12 +215,17 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
       end
     end
     cmd_list =  [ "set", "port", @resource[:name] ]
-    cmd_list += [ "lacp=#{@resource[:lacp]}" ]
-    cmd_list += [ "tag=#{@resource[:tag]}" ]
-    cmd_list += [ "trunks=#{@resource[:trunks].join(',')}" ]
+    [ :lacp, :tag ].each { |key|
+      if @property_hash.has_key?(key) then
+        cmd_list += [ "#{key}=#{@resource[key]}" ]
+      end
+    }
+    if @property_hash.has_key?(:trunks) then
+      cmd_list += [ "trunks=#{@resource[:trunks].join(',')}" ]
+    end
     vsctl(cmd_list)
     
-    if @property_flush[:ensure] == :present then
+    if @property_flush[:ensure] == :present or @property_flush[:ensure] == :partial then
       phys_create
     end
   end

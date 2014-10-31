@@ -1,3 +1,4 @@
+require 'pp'
 module IFCFG
   class OVS
     attr_reader :ifcfg
@@ -60,7 +61,7 @@ module IFCFG
       unless value.is_a?(Array) 
         value = [ value ]
       end
-      set_key(key, oldval + newval) 
+      set_key(key, oldval + value) 
     end
 
     def to_s
@@ -76,6 +77,8 @@ module IFCFG
     end
 
     def save(filename)
+      pp @ifcfg
+      Puppet.debug "Writing to file #{filename}"
       File.open(filename, 'w') { |file| file << self.to_s }
     end
   end
@@ -101,6 +104,7 @@ module IFCFG
   class Bond < OVS
     def initialize(name, bridge)
       super(name)
+      Puppet.debug "My bridge is #{bridge}"
       set_key('TYPE', 'OVSBond')
       set_key('OVS_BRIDGE', bridge)
       set_key('ONBOOT', 'yes')

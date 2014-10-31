@@ -1,3 +1,4 @@
+require 'pp'
 require File.expand_path(File.join(File.dirname(__FILE__), '..', '..', '..', 'puppetx', 'redhat', 'ifcfg.rb'))
 
 BASE = '/etc/sysconfig/network-scripts/ifcfg-'
@@ -27,6 +28,7 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
 #      super
 #    end
     add_bridge = false
+    pp @resource.to_hash
     if @resource[:interfaces].length == 1 then
     
       iface = @resource[:interfaces][0]
@@ -35,6 +37,7 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
       if interface_physical?(iface)
         template = DEFAULT
         extras   = nil
+        add_bridge = true
   
         if link?(iface)
           extras = dynamic_default(iface) if dynamic?(iface)
@@ -61,10 +64,11 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
         if interface_physical?(iface)
           template = DEFAULT
           extras   = nil
+          add_bridge = true
   
           if link?(iface)
-            if File.exist?(BASE + iface)
-              template = from_str(File.read(BASE + iface))
+            if File.exist?(BASE + @resource[:name])
+              template = from_str(File.read(BASE + @resource[:name]))
             end
           end
 
@@ -77,7 +81,7 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
         end
       }
       if bond.key?('BOND_IFACES') then
-        bond.save(BASE + iface)
+        bond.save(BASE + @resource[:name])
       end
 
     end
@@ -166,9 +170,9 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
 
   def interface_physical?(iface)
     if iface == :portname then
-      self.class.interface_physical(@resource[:name])
+      self.class.interface_physical?(@resource[:name])
     else
-      self.class.interface_physical(iface)
+      self.class.interface_physical?(iface)
     end
   end
 

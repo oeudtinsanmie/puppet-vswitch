@@ -15,7 +15,7 @@ Puppet::Type.newtype(:vs_port) do
     end
   end
   
-  newparam(:interfaces, :array_matching => :all) do
+  newproperty(:interfaces, :array_matching => :all) do
     desc 'The interface(s) to attach to the bridge'
     def insync?(is)
       # The current value may be nil and we don't
@@ -28,14 +28,6 @@ Puppet::Type.newtype(:vs_port) do
       else
         is == @should
       end
-    end
-  
-    def should_to_s(newvalue)
-      newvalue.inspect
-    end
-  
-    def is_to_s(currentvalue)
-      currentvalue.inspect
     end
   
     validate do |value|
@@ -53,7 +45,7 @@ Puppet::Type.newtype(:vs_port) do
       end
     end
     
-    defaultto(:portname)
+    defaultto([:portname])
   end
   
   newproperty(:tag) do
@@ -63,8 +55,6 @@ Puppet::Type.newtype(:vs_port) do
         raise ArgumentError, "vlan ids should be non-negative integers"
       end
     end
-    
-    defaultto([])
   end
   
   newproperty(:trunks, :array_matching => :all) do
@@ -107,16 +97,14 @@ Puppet::Type.newtype(:vs_port) do
       end
     end
     
-    defaultto([])
   end
   
-  newparam(:lacp) do
+  newproperty(:lacp) do
     desc 'LACP status for this port, if it has multiple interfaces attached'
-    
-    defaultto([])
+
   end
   
-  newparam(:bridge) do
+  newproperty(:bridge) do
     desc 'The bridge to attach to'
 
     validate do |value|
