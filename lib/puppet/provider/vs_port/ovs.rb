@@ -48,6 +48,7 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
   end
   
   def self.list_obj
+    theAnswer = []
     portlist = vsctl('show').split("\n")
     prevIndent = 0
     bridge = nil
@@ -119,7 +120,7 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
           end
           if bridge != nil and port != nil then
             if line.start_with? "trunks: " then
-              line = line[5..-1].lstrip.rstrip.to_i
+              line = line[8..-1].lstrip.rstrip
               line = line[1..-2]
               port[:trunks] = line.split(',').collect { |vlan|
                 vlan.to_i

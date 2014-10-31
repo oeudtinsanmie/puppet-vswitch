@@ -44,11 +44,11 @@ Puppet::Type.newtype(:vs_port) do
       end
       if value.is_a?(Array)
         value.each { |val|
-          if !val.is_a?(String)
+          if !val.is_a?(String) and !val.is_a?(Symbol)
             raise ArgumentError, "Invalid interface #{val}. Requires a String, not a #{val.class}"
           end
         }
-      elsif !value.is_a?(String)
+      elsif !value.is_a?(String) and !value.is_a?(Symbol)
         raise ArgumentError, "Invalid interface #{value}. Requires a String, not a #{value.class}"
       end
     end
