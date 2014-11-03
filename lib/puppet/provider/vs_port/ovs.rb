@@ -39,9 +39,11 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
   end
   
   def create
+    pp @property_flush
     unless @property_flush[:ensure] == :partial
       @property_flush[:ensure] = :present
     end
+    pp @property_flush
   end
   
   def destroy
@@ -173,7 +175,7 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
   end
   
   def modified_bond?
-    if !was_simple_port? then
+    if was_simple_port? then
       if !is_simple_port? then
         @property_flush[:interfaces].sort != @resource[:interfaces].sort
       else
@@ -193,11 +195,12 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
   end
 
   def was_simple_port?
-    simple_port?(@property_flush)
+    @property_flush[:interfaces] != nil and simple_port?(@property_flush)
   end
 
   def flush
     pp @property_hash
+    pp @property_flush
     if @property_flush[:ensure] == :absent then
       phys_destroy
     end
@@ -216,11 +219,11 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
     end
     cmd_list =  [ "set", "port", @resource[:name] ]
     [ :lacp, :tag ].each { |key|
-      if @property_hash.has_key?(key) then
+      if @resource.to_hash.has_key?(key) then
         cmd_list += [ "#{key}=#{@resource[key]}" ]
       end
     }
-    if @property_hash.has_key?(:trunks) then
+    if @resource.to_hash.has_key?(:trunks) then
       cmd_list += [ "trunks=#{@resource[:trunks].join(',')}" ]
     end
     vsctl(cmd_list)

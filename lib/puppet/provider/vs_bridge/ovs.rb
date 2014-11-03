@@ -125,6 +125,8 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
   end
   
   def flush
+    pp @property_flush
+    pp @resource.to_hash
     if @property_flush[:ensure] == :absent then
       vsctl("del-br", @resource[:name])
       return
@@ -132,8 +134,8 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
     if @property_flush[:ensure] == :present then
       vsctl("add-br", @resource[:name])
     end
-    if @property_hash[:vlans] != nil then
-      @property_hash[:vlans].each { |vlan|
+    if @resource.to_hash[:vlans] != nil then
+      @resource.to_hash[:vlans].each { |vlan|
         if @property_flush[:vlans] != nil and @property_flush[:vlans].include? "#{@resource[:name]}.#{vlan}" then
           @property_flush[:vlans].delete(vlan)
         else
@@ -159,12 +161,20 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
     return result.split("\n")
   end
 
-  def flush_external_ids 
-    old_ids = Hash[@property_flush[:external_ids].map{|i| i.split('=')}]
-    if @property_hash[:external_ids].is_a?(String) then # split if comma delimited list
-      new_ids = _split(@property_hash[:external_ids])
-    else # just map if it's an array
-      new_ids = Hash[@property_hash[:external_ids].map{|i| i.split('=')}]
+  def flush_external_ids
+    if @property_flush[:external_ids] == nil then
+      old_ids = {}
+    else 
+      old_ids = Hash[@property_flush[:external_ids].map{|i| i.split('=')}]
+    end
+    if @resource.to_hash[:external_ids] == nil then
+      new_ids = {}
+    else
+      if @resource.to_hash[:external_ids].is_a?(String) then # split if comma delimited list
+        new_ids = _split(@resource.t_hash[:external_ids])
+      else # just map if it's an array
+        new_ids = Hash[@resource.to_hash[:external_ids].map{|i| i.split('=')}]
+      end
     end
     
     new_ids.each_pair do |k,v|
