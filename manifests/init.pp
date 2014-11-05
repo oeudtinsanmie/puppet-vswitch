@@ -30,6 +30,4 @@ class vswitch (
   $cls = "vswitch::${provider}"
   include $cls
 
-  Package[$vswitch::params::ovs_package_name] -> Vs_bridge <| |>
-  Package[$vswitch::params::ovs_package_name] -> Vs_port <| |>
 }

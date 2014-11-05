@@ -41,6 +41,10 @@ class vswitch::ovs(
         enable      => true,
         name        => $::vswitch::params::ovs_service_name,
       }
+      if $repos != undef {
+        create_resources(yumrepo, $repos, $defaultrepo)
+        Yumrepo <| tag == "ovsrepo" |> -> Package[$::vswitch::params::ovs_package_name]
+      }
     }
     default: {
       fail( "${::osfamily} not yet supported by puppet-vswitch")
