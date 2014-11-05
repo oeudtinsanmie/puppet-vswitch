@@ -114,9 +114,6 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
       else
         iface = @resource[:interfaces]
         iface = @resource[:name] if iface == :portname
-        if iface == :portname then
-          iface = @resource[:name]
-        end
         if interface_physical?(iface)
           ifdown(iface)
           ifup(iface)
