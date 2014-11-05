@@ -74,6 +74,7 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
     portlist = vsctl('show').split("\n")
     prevIndent = 0
     bridge = nil
+    port = nil
     for line in portlist
       indent = 0
       while line[indent, indent_space] == "    " do
@@ -84,6 +85,9 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
       case indent
         when 1
           
+          if port != nil and !port[:interfaces].empty? then
+            theAnswer += [ validate(port) ]
+          end
           port = nil
           interface = nil
           bridge = nil
