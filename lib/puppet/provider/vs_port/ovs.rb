@@ -1,4 +1,3 @@
-require 'pp'
 require 'puppet'
 
 Puppet::Type.type(:vs_port).provide(:ovs) do
@@ -39,11 +38,9 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
   end
   
   def create
-    pp @property_flush
     unless @property_flush[:ensure] == :partial
       @property_flush[:ensure] = :present
     end
-    pp @property_flush
   end
   
   def destroy
@@ -203,8 +200,6 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
   end
 
   def flush
-    pp @property_hash
-    pp @property_flush
     if @property_flush[:ensure] == :absent then
       phys_destroy
     end

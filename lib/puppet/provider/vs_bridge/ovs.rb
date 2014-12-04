@@ -125,8 +125,6 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
   end
   
   def flush
-    pp @property_flush
-    pp @resource.to_hash
     if @property_flush[:ensure] == :absent then
       vsctl("del-br", @resource[:name])
       return
@@ -136,7 +134,7 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
     end
     if @resource.to_hash[:vlans] != nil then
       @resource.to_hash[:vlans].each { |vlan|
-        if @property_flush[:vlans] != nil and @property_flush[:vlans].include? "#{@resource[:name]}.#{vlan}" then
+        if @property_flush[:vlans] != nil and @property_flush[:vlans].include? vlan then
           @property_flush[:vlans].delete(vlan)
         else
           vsctl("add-br", "#{@resource[:name]}.#{vlan}", @resource[:name], vlan)
@@ -149,7 +147,7 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
       }
     end
     
-    flush_external_ids
+#    flush_external_ids
   end
 
   def _split(string, splitter=',')

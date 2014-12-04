@@ -1,4 +1,3 @@
-require 'pp'
 module IFCFG
   class OVS
     attr_reader :ifcfg
@@ -8,6 +7,7 @@ module IFCFG
     end
 
     def self.remove(name)
+      Puppet.debug "Removing #{BASE + name}"
       File.delete(BASE + name)
     rescue Errno::ENOENT
     end
@@ -77,7 +77,6 @@ module IFCFG
     end
 
     def save(filename)
-      pp @ifcfg
       Puppet.debug "Writing to file #{filename}"
       File.open(filename, 'w') { |file| file << self.to_s }
     end

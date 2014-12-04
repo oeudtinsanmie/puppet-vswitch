@@ -23,12 +23,7 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
   commands :vsctl  => 'ovs-vsctl'
 
   def phys_create
-#    unless vsctl('list-ports',
-#      @resource[:bridge]).include? @resource[:interface]
-#      super
-#    end
     add_bridge = false
-    pp @resource.to_hash
     if is_bond? then    
       # add bond
       bond = IFCFG::Bond.new(@resource[:name], @resource[:bridge])
@@ -142,13 +137,26 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
 
   def phys_destroy
     remove_bridge = false
-    @resource[:interfaces].each { |iface|
+    if is_bond? then
+      @resource[:interfaces].each { |iface|
+        iface = @resource[:name] if iface == :portname
+        if interface_physical?(iface)
+          remove_bridge = true
+          ifdown(iface)
+          IFCFG::OVS.remove(iface)
+        end
+      }
+      IFCFG::OVS.remove(@resource[:name])
+    else
+      iface = @resource[:interfaces]
+      iface = @resource[:name] if iface == :portname
       if interface_physical?(iface)
         remove_bridge = true
         ifdown(iface)
         IFCFG::OVS.remove(iface)
       end
-    }
+    
+    end
     if remove_bridge == true then
       ifdown(@resource[:bridge])
       IFCFG::OVS.remove(@resource[:bridge])
