@@ -13,6 +13,17 @@ class vswitch::params {
       $ovs_package_name = 'openvswitch'
       $ovs_service_name = 'openvswitch'
       $provider         = 'ovs'
+      $openstack_ver    = 'kilo'
+      case $openstack_ver {
+        'kilo' : {
+          $elver = "el${operatingsystemmajrelease}"
+          $fedoraver = "f${operatingsystemmajrelease}"
+        }
+        default: {
+          $elver = "epel-${operatingsystemmajrelease}"
+          $fedoraver = "fedora-${operatingsystemmajrelease}"
+        }
+      }
       case $::operatingsystem {
         'RedHat' , 'CentOS' : {
           $fedora_base  = "http://dl.fedoraproject.org/pub"
@@ -20,11 +31,11 @@ class vswitch::params {
           $repos        = {
             'fedora-epel' => {
 			        descr  => 'dl.fedoraproject.org epel mirror',
-			        baseurl => "${fedora_base}/epel/${lsbmajdistrelease}/${architecture}",
-			        gpgkey  => "${fedora_base}/epel/RPM-GPG-KEY-EPEL-${lsbmajdistrelease}",
+			        baseurl => "${fedora_base}/epel/${operatingsystemmajrelease}/${architecture}",
+			        gpgkey  => "${fedora_base}/epel/RPM-GPG-KEY-EPEL-${operatingsystemmajrelease}",
 			      },
 			      'openstack-epel' => {
-			        baseurl => "http://repos.fedorapeople.org/repos/openstack/openstack-havana/epel-6",
+			        baseurl => "http://repos.fedorapeople.org/repos/openstack/openstack-${openstack_ver}/${elver}",
 			        descr   => 'openstack havana epel repository',
 			        gpgcheck => 0,
 			      },         
