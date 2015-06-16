@@ -123,30 +123,55 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
     
     theAnswer
   end
+
+  def self.phys_exists?(interface, bridge)
+    true
+  end
+  
+  def phys_create
+  end
+  
+  def phys_destroy
+  end
+
+  def phys_create_vlan(vlan)
+  end
+  
+  def phys_destroy_vlan(vlan)
+  end
+  
+  def ifreset
+  end
   
   def flush
     if @property_flush[:ensure] == :absent then
       vsctl("del-br", @resource[:name])
+      phys_destroy
       return
     end
     if @property_flush[:ensure] == :present then
       vsctl("add-br", @resource[:name])
+      phys_create
     end
     if @resource.to_hash[:vlans] != nil then
       @resource.to_hash[:vlans].each { |vlan|
         if @property_flush[:vlans] != nil and @property_flush[:vlans].include? vlan then
           @property_flush[:vlans].delete(vlan)
+          phys_destroy_vlan(vlan)
         else
           vsctl("add-br", "#{@resource[:name]}.#{vlan}", @resource[:name], vlan)
+          phys_create_vlan(vlan)
         end
       }
     end
     if @property_flush[:vlans] != nil then
       @property_flush[:vlans].each { |vlan|
         vsctl("del-br", "#{@resource[:name]}.#{vlan}")
+        phys_destroy_vlan(vlan)
       }
     end
     
+    ifreset
 #    flush_external_ids
   end
 
