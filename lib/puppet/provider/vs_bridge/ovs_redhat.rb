@@ -58,7 +58,7 @@ Puppet::Type.type(:vs_bridge).provide(:ovs_redhat, :parent => :ovs) do
       template = DEFAULT
     end
     bridge = IFCFG::Bridge.new("#{@resource[:name]}.#{vlan}", template)
-    bridge.set_key('OVS_OPTIONS', "#{@resource[:name]} #{vlan}")
+    bridge.set_key('OVS_OPTIONS', "\"#{@resource[:name]} #{vlan}\"")
     bridge.save(BASE + "#{@resource[:name]}.#{vlan}")
   end
   
