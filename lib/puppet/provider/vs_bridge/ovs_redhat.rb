@@ -23,6 +23,12 @@ Puppet::Type.type(:vs_bridge).provide(:ovs_redhat, :parent => :ovs) do
   commands :vsctl  => 'ovs-vsctl'
   
   def phys_create
+    
+    if File.exist?(BASE + @resource[:name])
+      template = from_str(File.read(BASE + @resource[:name]))
+    else
+      template = DEFAULT
+    end
     bridge = IFCFG::Bridge.new(@resource[:name], template)
     if @resource[:external_ids] then 
       extras = ""
@@ -46,6 +52,11 @@ Puppet::Type.type(:vs_bridge).provide(:ovs_redhat, :parent => :ovs) do
   end
 
   def phys_create_vlan(vlan)
+    if File.exist?(BASE + "#{@resource[:name]}.#{vlan}")
+      template = from_str(File.read(BASE + "#{@resource[:name]}.#{vlan}"))
+    else
+      template = DEFAULT
+    end
     bridge = IFCFG::Bridge.new("#{@resource[:name]}.#{vlan}", template)
     bridge.set_key('OVS_OPTIONS', "#{@resource[:name]} #{vlan}")
     bridge.save(BASE + "#{@resource[:name]}.#{vlan}")
