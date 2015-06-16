@@ -203,7 +203,11 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
   def self.interface_physical?(iface)
     # OVS ports don't have entries in /sys/class/net
     # Alias interfaces (ethX:Y) must use ethX entries
-    interface = iface.sub(/:\d/, '')
+    if iface == :portname then
+      interface = @resource[:name].sub(/:\d/, '')
+    else
+      interface = iface.sub(/:\d/, '')
+    end
     ! Dir["/sys/class/net/#{interface}"].empty?
   end
 
