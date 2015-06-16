@@ -75,4 +75,14 @@ Puppet::Type.type(:vs_bridge).provide(:ovs_redhat, :parent => :ovs) do
       }
     end
   end
+  
+  def from_str(data)
+    items = {}
+    data.each_line do |line|
+      if m = line.match(/^(.*)=(.*)$/)
+        items.merge!(m[1] => m[2])
+      end
+    end
+    items
+  end
 end
