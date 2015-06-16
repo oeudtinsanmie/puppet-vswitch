@@ -28,7 +28,7 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
       # add bond
       bond = IFCFG::Bond.new(@resource[:name], @resource[:bridge])
       @resource[:interfaces].each { |iface|
-        iface = @resource[:name] is_port?(iface)
+        iface = @resource[:name] if is_port?(iface)
           
         if interface_physical?(iface)
           template = DEFAULT
@@ -59,7 +59,7 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
     else
       # add bridge port
       iface = @resource[:interfaces][0]
-      iface = @resource[:name] is_port?(iface)
+      iface = @resource[:name] if is_port?(iface)
         
       if interface_physical?(iface)
         template = DEFAULT
@@ -89,7 +89,7 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
       bridge.set(extras) if extras
       if is_bond? then
         @resource[:interfaces].each { |iface|
-          iface = @resource[:name] is_port?(iface)
+          iface = @resource[:name] if is_port?(iface)
           if interface_physical?(iface) and dynamic?(iface) then
             bridge.append_key('OVSDHCPINTERFACES', iface)
           end
@@ -100,7 +100,7 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
       ifdown(@resource[:bridge])
       if is_bond? then
         @resource[:interfaces].each { |iface|
-          iface = @resource[:name] is_port?(iface)
+          iface = @resource[:name] if is_port?(iface)
           if interface_physical?(iface)
             ifdown(iface)
             ifup(iface)
@@ -108,7 +108,7 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
         }
       else
         iface = @resource[:interfaces]
-        iface = @resource[:name] is_port?(iface)
+        iface = @resource[:name] if is_port?(iface)
         if interface_physical?(iface)
           ifdown(iface)
           ifup(iface)
@@ -139,7 +139,7 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
     remove_bridge = false
     if is_bond? then
       @resource[:interfaces].each { |iface|
-        iface = @resource[:name] is_port?(iface)
+        iface = @resource[:name] if is_port?(iface)
         if interface_physical?(iface)
           remove_bridge = true
           ifdown(iface)
@@ -149,7 +149,7 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
       IFCFG::OVS.remove(@resource[:name])
     else
       iface = @resource[:interfaces]
-      iface = @resource[:name] is_port?(iface)
+      iface = @resource[:name] if is_port?(iface)
       if interface_physical?(iface)
         remove_bridge = true
         ifdown(iface)
