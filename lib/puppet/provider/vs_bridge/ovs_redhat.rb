@@ -43,7 +43,6 @@ Puppet::Type.type(:vs_bridge).provide(:ovs_redhat, :parent => :ovs) do
   def phys_destroy
     ifdown(@resource[:name])
     IFCFG::OVS.remove(@resource[:name])
-    end
   end
 
   def phys_create_vlan(vlan)
