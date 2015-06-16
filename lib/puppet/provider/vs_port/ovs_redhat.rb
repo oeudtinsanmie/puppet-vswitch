@@ -75,10 +75,10 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
   
         port = IFCFG::Port.new(iface, @resource[:bridge])
         if @resource.to_hash.has_key? :tag then
-          bond.append_key('OVS_OPTIONS', "tag=#{@resource[:tag]}")
+          port.append_key('OVS_OPTIONS', "tag=#{@resource[:tag]}")
         end
         if @resource.to_hash.has_key? :trunks then
-          bond.append_key('OVS_OPTIONS', "trunks=#{@resource[:trunks].join(',')}")
+          port.append_key('OVS_OPTIONS', "trunks=#{@resource[:trunks].join(',')}")
         end
         port.save(BASE + iface)
       end
