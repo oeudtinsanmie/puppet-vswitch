@@ -87,6 +87,7 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
     if add_bridge then
       vlans = vsctl("--fake", "list-br").split("\n").keep_if{ |vlan| vlan.include?(@resource[:bridge])}
       bridge = IFCFG::Bridge.new(@resource[:bridge], template)
+      bridge.del_key('OVS_OPTIONS')
       bridge.set(extras) if extras
       if is_bond? then
         @resource[:interfaces].each { |iface|
