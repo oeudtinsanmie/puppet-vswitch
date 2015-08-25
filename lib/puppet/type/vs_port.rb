@@ -48,7 +48,7 @@ Puppet::Type.newtype(:vs_port) do
     defaultto([:portname])
   end
   
-  newproperty(:tag) do
+  newproperty(:vtag) do
     desc 'The vlan with which to tag untagged packets from this port'
     validate do |value|
       unless value.is_a?(Integer) and value >=0
@@ -101,7 +101,11 @@ Puppet::Type.newtype(:vs_port) do
   
   newproperty(:lacp) do
     desc 'LACP status for this port, if it has multiple interfaces attached'
+    
+  end
 
+  newproperty(:bond_mode) do
+    desc 'The bond mode for this port, if it has multiple interfaces attached (see https://www.kernel.org/doc/Documentation/networking/bonding.txt'
   end
   
   newproperty(:bridge) do

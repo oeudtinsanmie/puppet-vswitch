@@ -124,7 +124,7 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
           interface = nil
           if bridge != nil and port != nil then
             if line.start_with? "tag: " then
-              port[:tag] = line[5..-1].lstrip.rstrip.to_i
+              port[:vtag] = line[5..-1].lstrip.rstrip.to_i
             end
             
           end
@@ -217,7 +217,7 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
       end
     end
     cmd_list =  [ "set", "port", @resource[:name] ]
-    [ :lacp, :tag ].each { |key|
+    [ :lacp, :vtag ].each { |key|
       if @resource.to_hash.has_key?(key) then
         cmd_list += [ "#{key}=#{@resource[key]}" ]
       end

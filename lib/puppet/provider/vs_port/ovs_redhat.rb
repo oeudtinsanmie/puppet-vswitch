@@ -44,9 +44,13 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
           bond.append_key('BOND_IFACES', iface)
         end
       }
-      [ :tag, :lacp ].each { |key|
+      aliases = {
+         :vtag => "tag", 
+      }
+      [ :vtag, :lacp, :bond_mode ].each { |key|
         if @resource.to_hash.has_key? key then
-          bond.append_key('OVS_OPTIONS', "#{key}=#{@resource[key]}")
+          keystring = aliases.has_key? key ? aliases[key] : key 
+          bond.append_key('OVS_OPTIONS', "#{keystring}=#{@resource[key]}")
         end
       }
       if @resource.to_hash.has_key? :trunks then
@@ -74,8 +78,8 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
         end
   
         port = IFCFG::Port.new(iface, @resource[:bridge])
-        if @resource.to_hash.has_key? :tag then
-          port.append_key('OVS_OPTIONS', "tag=#{@resource[:tag]}")
+        if @resource.to_hash.has_key? :vtag then
+          port.append_key('OVS_OPTIONS', "tag=#{@resource[:vtag]}")
         end
         if @resource.to_hash.has_key? :trunks then
           port.append_key('OVS_OPTIONS', "trunks=#{@resource[:trunks].join(',')}")
