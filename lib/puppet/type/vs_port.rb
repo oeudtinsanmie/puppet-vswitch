@@ -108,6 +108,18 @@ Puppet::Type.newtype(:vs_port) do
     desc 'The bond mode for this port, if it has multiple interfaces attached (see https://www.kernel.org/doc/Documentation/networking/bonding.txt'
   end
   
+  newproperty(:bootproto) do
+    desc 'Boot protocol for the port'
+    newvalues(:none, :static, :dhcp)
+    defaultto(:none)
+  end
+  
+  newproperty(:onboot) do
+    desc 'Whether to enable the port on boot'
+    newvalues(:yes, :no)
+    defaultto(:yes)
+  end
+  
   newproperty(:bridge) do
     desc 'The bridge to attach to'
 

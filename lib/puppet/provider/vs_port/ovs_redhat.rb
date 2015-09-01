@@ -1,12 +1,10 @@
-require 'pp'
+#require 'pp'
 require File.expand_path(File.join(File.dirname(__FILE__), '..', '..', '..', 'puppetx', 'redhat', 'ifcfg.rb'))
 
 BASE = '/etc/sysconfig/network-scripts/ifcfg-'
 
 # When not seedling from interface file
 DEFAULT = {
-  'ONBOOT'        => 'yes',
-  'BOOTPROTO'     => 'dhcp',
   'PEERDNS'       => 'no',
   'NM_CONTROLLED' => 'no',
   'NOZEROCONF'    => 'yes' }
@@ -53,6 +51,8 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
           bond.append_key('OVS_OPTIONS', "#{keystring}=#{@resource[key]}")
         end
       }
+      bond.append_key('OVSBOOTPROTO', @resource[:bootproto])
+      bond.append_key('ONBOOT', @resource[:onboot])
       if @resource.to_hash.has_key? :trunks then
         bond.append_key('OVS_OPTIONS', "trunks=#{@resource[:trunks].join(',')}")
       end
@@ -84,6 +84,8 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
         if @resource.to_hash.has_key? :trunks then
           port.append_key('OVS_OPTIONS', "trunks=#{@resource[:trunks].join(',')}")
         end
+        port.append_key('BOOTPROTO', @resource[:bootproto])
+        port.append_key('ONBOOT', @resource[:onboot])
         port.save(BASE + iface)
       end
   
