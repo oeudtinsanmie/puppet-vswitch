@@ -1,6 +1,6 @@
 
 require File.expand_path(File.join(File.dirname(__FILE__), '..', '..', '..', 'puppetx', 'redhat', 'ifcfg.rb'))
-$LOAD_PATH.push(File.join(File.dirname(__FILE__), '..', '..', '..'))
+require File.expand_path(File.join(File.dirname(__FILE__), 'ovs.rb'))
 
 BASE = '/etc/sysconfig/network-scripts/ifcfg-'
 
