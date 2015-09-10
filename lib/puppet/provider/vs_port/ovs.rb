@@ -217,11 +217,16 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
       end
     end
     cmd_list =  [ "set", "port", @resource[:name] ]
-    [ :lacp, :vtag ].each { |key|
-      if @resource.to_hash.has_key?(key) then
-        cmd_list += [ "#{key}=#{@resource[key]}" ]
-      end
+
+    aliases = {
+       :vtag => "tag", 
     }
+    [ :vtag, :lacp ].each { |key|
+      if @resource.to_hash.has_key? key then
+        keystring = aliases.has_key? key ? aliases[key] : key 
+        cmd_list += [ "#{keystring}=#{@resource[key]}" ]
+      end
+    }  
     if @resource.to_hash.has_key?(:trunks) then
       cmd_list += [ "trunks=#{@resource[:trunks].join(',')}" ]
     end
