@@ -48,7 +48,7 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
       }
       [ :vtag, :lacp, :bond_mode ].each { |key|
         if @resource.to_hash.has_key? key then
-          keystring = aliases.has_key? key ? aliases[key] : key 
+          keystring = (aliases.has_key? key) ? aliases[key] : key 
           bond.append_key('OVS_OPTIONS', "#{keystring}=#{@resource[key]}")
         end
       }

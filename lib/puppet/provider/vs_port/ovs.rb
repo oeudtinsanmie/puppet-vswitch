@@ -223,7 +223,7 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
     }
     [ :vtag, :lacp ].each { |key|
       if @resource.to_hash.has_key? key then
-        keystring = aliases.has_key? key ? aliases[key] : key 
+        keystring = (aliases.has_key? key) ? aliases[key] : key 
         cmd_list += [ "#{keystring}=#{@resource[key]}" ]
       end
     }  
