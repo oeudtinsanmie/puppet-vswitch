@@ -196,7 +196,7 @@ Puppet::Type.type(:vs_port).provide(:ovs) do
   end
 
   def was_simple_port?
-    @property_flush[:interfaces] != nil and simple_port?(@property_flush)
+    (not @property_flush.has_key? :ensure) and @property_flush[:interfaces] != nil and simple_port?(@property_flush)
   end
 
   def flush
