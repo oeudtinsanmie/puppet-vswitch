@@ -129,6 +129,7 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
       }
       if is_bond? then
         ifup(@resource[:name])
+      end
     end
   end
 
