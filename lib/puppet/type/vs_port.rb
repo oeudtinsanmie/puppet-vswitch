@@ -129,6 +129,10 @@ Puppet::Type.newtype(:vs_port) do
       end
     end
   end
+  
+  newproperty(:ip) do
+    desc 'IP address if static'
+  end
 
   autorequire(:vs_bridge) do
     self[:bridge] if self[:bridge]
