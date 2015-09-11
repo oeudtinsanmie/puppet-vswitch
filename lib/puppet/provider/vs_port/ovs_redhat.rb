@@ -22,7 +22,7 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
   commands :vsctl  => 'ovs-vsctl'
   
   def phys_create
-    add_bridge = false
+    
     if is_bond? then    
       # add bond
       bond = IFCFG::Bond.new(@resource[:name], @resource[:bridge])
@@ -101,48 +101,10 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
         port.append_key('BOOTPROTO', @resource[:bootproto])
       end
       port.save(BASE + iface)
-      
     end
-#    if add_bridge then
-#      vlans = vsctl("--fake", "list-br").split("\n").keep_if{ |vlan| vlan.include?(@resource[:bridge])}
-#      bridge = IFCFG::Bridge.new(@resource[:bridge], template)
-#      bridge.del_key('OVS_OPTIONS="trunks')
-#      bridge.set(extras) if extras
-#      if is_bond? then
-#        @resource[:interfaces].each { |iface|
-#          iface = @resource[:name] if is_port?(iface)
-#          if interface_physical?(iface) and dynamic?(iface) then
-#            bridge.append_key('OVSDHCPINTERFACES', iface)
-#          end
-#        }
-#      end
-#      bridge.save(BASE + @resource[:bridge])
-#
-#      ifdown(@resource[:bridge])
-#      if is_bond? then
-#        @resource[:interfaces].each { |iface|
-#          iface = @resource[:name] if is_port?(iface)
-#          if interface_physical?(iface)
-#            ifdown(iface)
-#            ifup(iface)
-#          end
-#        }
-#      else
-#        iface = @resource[:interfaces]
-#        iface = @resource[:name] if is_port?(iface)
-#        if interface_physical?(iface)
-#          ifdown(iface)
-#          ifup(iface)
-#        end
-#      end
-#      ifup(@resource[:bridge])
-#      vlans.each { | vlan |
-#        ifup(vlan)
-#      }
-#      if is_bond? then
-#        ifup(@resource[:name])
-#      end
-#    end
+    
+    ifdown(@resource[:name])
+    ifup(@resource[:name])
   end
 
   def is_bond?
