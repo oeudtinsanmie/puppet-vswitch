@@ -155,9 +155,13 @@ Puppet::Type.type(:vs_bridge).provide(:ovs) do
     end
     if @resource.to_hash[:vlans] != nil then
       @resource.to_hash[:vlans].each { |vlan|
+        isnew = @property_flush[:ensure] == :present
         if @property_flush[:vlans] != nil and @property_flush[:vlans].include? vlan then
           @property_flush[:vlans].delete(vlan)
         else
+          isnew = true
+        end
+        if isnew then
           vsctl("add-br", "#{@resource[:name]}.#{vlan}", @resource[:name], vlan)
           phys_create_vlan(vlan)
         end
