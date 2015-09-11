@@ -79,8 +79,12 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
           template = from_str(File.read(BASE + iface))
         end
       end
-
-      port = IFCFG::Port.new(iface, @resource[:bridge], interface_physical?(iface))
+      
+      bridge = @resource[:bridge]
+      if @resource.to_hash.has_key? :vtag and not @resource.to_hash.has_key? :trunks then
+        bridge = "#{@resource[:bridge]}.#{@resource[:vtag]}"
+      end
+      port = IFCFG::Port.new(iface, bridge, interface_physical?(iface))
       if @resource.to_hash.has_key? :vtag then
         port.append_key('OVS_OPTIONS', "tag=#{@resource[:vtag]}")
       end
