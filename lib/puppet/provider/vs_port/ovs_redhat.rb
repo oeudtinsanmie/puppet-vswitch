@@ -90,7 +90,12 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
       if @resource.to_hash.has_key? :trunks then
         port.append_key('OVS_OPTIONS', "trunks=#{@resource[:trunks].join(',')}")
       end
-      port.append_key('BOOTPROTO', @resource[:bootproto])
+      if @resource.to_hash.has_key? :dhcpinterfaces then
+        bridge.append_key('OVSDHCPINTERFACES', @resource[:dhcpinterfaces])
+        port.append_key('OVSBOOTPROTO', @resource[:bootproto])
+      else
+        port.append_key('BOOTPROTO', @resource[:bootproto])
+      end
       port.save(BASE + iface)
       
     end

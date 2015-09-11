@@ -133,6 +133,32 @@ Puppet::Type.newtype(:vs_port) do
   newproperty(:ip) do
     desc 'IP address if static'
   end
+  
+  newproperty(:dhcpinterfaces, :array_matching => :all) do
+    desc 'One or more interfaces that can reach the DHCP server, if using DHCP for your OVS Port'
+    def insync?(is)
+      # The current value may be nil and we don't
+      # want to call sort on it so make sure we have arrays 
+      # (@ref https://ask.puppetlabs.com/question/2910/puppet-types-with-array-property/)
+      if is.is_a?(Array) and @should.is_a?(Array)
+        is.sort == @should.sort
+      elsif @should.is_a?(Array) and @should.length == 1
+        is == @should[0]
+      else
+        is == @should
+      end
+    end
+
+    def should_to_s(newvalue)
+      newvalue.inspect
+    end
+    
+    def is_to_s(currentvalue)
+      currentvalue.inspect
+    end
+    
+    
+  end
 
   autorequire(:vs_bridge) do
     self[:bridge] if self[:bridge]
