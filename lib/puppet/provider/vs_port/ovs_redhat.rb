@@ -127,6 +127,8 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
       vlans.each { | vlan |
         ifup(vlan)
       }
+      if is_bond? then
+        ifup(@resource[:name])
     end
   end
 
