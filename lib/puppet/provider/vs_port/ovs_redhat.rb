@@ -69,33 +69,30 @@ Puppet::Type.type(:vs_port).provide(:ovs_redhat, :parent => :ovs) do
       iface = @resource[:interfaces][0]
       iface = @resource[:name] if is_port?(iface)
         
-      if interface_physical?(iface)
-        template = DEFAULT
-        extras   = nil
-        add_bridge = true
-  
-        if link?(iface)
-          extras = dynamic_default(iface) if dynamic?(iface)
-          if File.exist?(BASE + iface)
-            template = from_str(File.read(BASE + iface))
-          end
+      template = DEFAULT
+      extras   = nil
+      add_bridge = true
+
+      if link?(iface)
+        extras = dynamic_default(iface) if dynamic?(iface)
+        if File.exist?(BASE + iface)
+          template = from_str(File.read(BASE + iface))
         end
-  
-        port = IFCFG::Port.new(iface, @resource[:bridge])
-        if @resource.to_hash.has_key? :vtag then
-          port.append_key('OVS_OPTIONS', "tag=#{@resource[:vtag]}")
-        end
-        if @resource.to_hash.has_key? :ip then
-          port.append_key('IPADDR', @resource[:ip])
-        end
-        if @resource.to_hash.has_key? :trunks then
-          port.append_key('OVS_OPTIONS', "trunks=#{@resource[:trunks].join(',')}")
-        end
-        port.append_key('BOOTPROTO', @resource[:bootproto])
-        port.append_key('ONBOOT', @resource[:onboot])
-        port.save(BASE + iface)
       end
-  
+
+      port = IFCFG::Port.new(iface, @resource[:bridge], interface_physical?(iface))
+      if @resource.to_hash.has_key? :vtag then
+        port.append_key('OVS_OPTIONS', "tag=#{@resource[:vtag]}")
+      end
+      if @resource.to_hash.has_key? :ip then
+        port.append_key('IPADDR', @resource[:ip])
+      end
+      if @resource.to_hash.has_key? :trunks then
+        port.append_key('OVS_OPTIONS', "trunks=#{@resource[:trunks].join(',')}")
+      end
+      port.append_key('BOOTPROTO', @resource[:bootproto])
+      port.save(BASE + iface)
+      
     end
     if add_bridge then
       vlans = vsctl("--fake", "list-br").split("\n").keep_if{ |vlan| vlan.include?(@resource[:bridge])}

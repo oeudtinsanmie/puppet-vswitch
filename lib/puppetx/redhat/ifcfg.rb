@@ -89,14 +89,17 @@ module IFCFG
       del_key('HWADDR')
     end
   end
-
+  
   class Port < OVS
-    def initialize(name, bridge)
+    def initialize(name, bridge, isPhysical)
       super(name)
-      set_key('TYPE', 'OVSPort')
+      if isPhysical then
+        set_key('TYPE', 'OVSPort')
+      else
+        set_key('TYPE', 'OVSIntPort')
+      end
       set_key('OVS_BRIDGE', bridge)
       set_key('ONBOOT', 'yes')
-      set_key('BOOTPROTO', 'none')
     end
   end
   
